@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habibi's Profile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,400;9..144,600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --neon: #39ff14;
+    --neon-dim: rgba(57, 255, 20, .35);
+    --night: #060a06;
+    --cream: #fbf6ef;
+    --ink: #2b2a33;
+    --muted: #7a7684;
+    --lav: #d9c9ef;
+    --peach: #ffd3b8;
+    --mint: #c6e8d6;
+    --sky: #c9def5;
+    --rose: #f6c9d4;
+    --line: #ece4d8;
+  }
+  * { box-sizing: border-box; cursor: none !important; }
+  html, body { margin: 0; }
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--cream);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  body.neon { background: var(--night); color: var(--neon); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .hidden { display: none !important; }
+
+  /* ---------- fake (inverted) cursor ---------- */
+  #cursor {
+    position: fixed; top: 0; left: 0;
+    width: 22px; height: 26px;
+    pointer-events: none; z-index: 99999;
+    transform: translate(-100px, -100px);
+    will-change: transform;
+  }
+  #cursor path { fill: var(--ink); stroke: #fff; stroke-width: 1.5; }
+  body.neon #cursor path { fill: var(--neon); stroke: #000; }
+  body.neon #cursor svg { filter: drop-shadow(0 0 6px var(--neon)); }
+
+  /* ---------- login (neon) ---------- */
+  #login {
+    min-height: 100vh; display: grid; place-items: center; padding: 24px;
+    background: radial-gradient(circle at 50% 35%, rgba(57,255,20,.09), transparent 60%), var(--night);
+  }
+  .login-card {
+    width: min(560px, 100%);
+    border: 1px solid var(--neon-dim);
+    border-radius: 14px;
+    padding: 40px 36px;
+    background: rgba(57,255,20,.025);
+    box-shadow: 0 0 60px rgba(57,255,20,.08);
+  }
+  .eyebrow { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; opacity: .7; margin: 0 0 14px; }
+  .login-card h1 { font-size: 32px; margin: 0 0 10px; text-shadow: 0 0 14px var(--neon-dim); }
+  .prompt { margin: 0 0 24px; opacity: .85; line-height: 1.55; }
+  .prompt b { background: var(--neon); color: #000; padding: 1px 6px; border-radius: 4px; }
+  .field { display: flex; gap: 10px; }
+  .login-card input {
+    flex: 1; min-width: 0;
+    background: transparent; border: 1px solid var(--neon-dim); border-radius: 8px;
+    color: var(--neon); font: inherit; font-size: 18px; padding: 12px 14px; outline: none;
+  }
+  .login-card input:focus { border-color: var(--neon); box-shadow: 0 0 0 3px rgba(57,255,20,.15); }
+  .login-card .go {
+    background: var(--neon); color: #000; border: 0; border-radius: 8px;
+    font: inherit; font-weight: 700; padding: 0 18px; transition: box-shadow .15s;
+  }
+  .login-card .go.is-hover { box-shadow: 0 0 20px var(--neon); }
+  .msg { min-height: 24px; margin: 16px 0 0; font-size: 14px; line-height: 1.55; }
+  .msg.err { color: #ff8fb1; }
+  .vkb { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 22px; }
+  .key {
+    border: 1px solid var(--neon-dim); background: transparent; color: var(--neon);
+    padding: 12px 0; font: inherit; font-size: 16px; border-radius: 8px;
+    transition: background .1s, color .1s;
+  }
+  .key.is-hover { background: var(--neon); color: #000; }
+  .key.pressed { transform: scale(.94); }
+
+  .shake { animation: shake .35s; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); } 40% { transform: translateX(8px); }
+    60% { transform: translateX(-5px); } 80% { transform: translateX(5px); }
+  }
+
+  /* ---------- loading ---------- */
+  #loading {
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; padding: 24px;
+  }
+  .count {
+    font-family: 'Fraunces', serif; font-weight: 400;
+    font-size: clamp(64px, 14vw, 160px); letter-spacing: -.02em; margin: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .load-label { color: var(--muted); margin: 6px 0 28px; }
+  .bar { width: min(360px, 80vw); height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; }
+  .bar span { display: block; height: 100%; width: .3%; background: linear-gradient(90deg, var(--lav), var(--peach)); border-radius: 99px; }
+  .insult { margin-top: 44px; opacity: 0; transform: translateY(10px); transition: opacity .5s, transform .5s; }
+  .insult.show { opacity: 1; transform: none; }
+  .insult p { font-family: 'Fraunces', serif; font-size: clamp(22px, 3.4vw, 34px); margin: 0 0 10px; line-height: 1.3; }
+  .insult strong { background: var(--rose); padding: 0 8px; border-radius: 6px; font-weight: 600; }
+  .arrow { font-size: 28px; color: var(--muted); animation: bob 1.1s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(8px); } }
+
+  /* ---------- profile (pastel) ---------- */
+  #profile { padding: 32px 24px 96px; max-width: 980px; margin: 0 auto; }
+  .top {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 22px; border-bottom: 1px solid var(--line); margin-bottom: 36px;
+  }
+  .brand { font-family: 'Fraunces', serif; font-size: 20px; }
+  .brand span { color: var(--muted); }
+  .navlinks { display: flex; gap: 22px; color: var(--muted); font-size: 14px; }
+  .navlinks a { color: inherit; text-decoration: none; }
+  .navlinks a.is-hover { color: var(--ink); }
+  .hero {
+    display: grid; grid-template-columns: auto 1fr; gap: 32px; align-items: center;
+    background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 34px;
+  }
+  .avatar {
+    width: 124px; height: 124px; border-radius: 50%;
+    background: var(--lav); display: grid; place-items: center;
+    font-family: 'Fraunces', serif; font-size: 54px;
+    box-shadow: 0 0 0 6px #fff, 0 0 0 8px var(--peach);
+  }
+  .hero h2 { font-family: 'Fraunces', serif; font-weight: 600; font-size: 42px; margin: 0; letter-spacing: -.01em; }
+  .handle { color: var(--muted); margin: 2px 0 4px; }
+  .formerly { font-size: 13px; color: var(--muted); margin: 0 0 14px; }
+  .bio { margin: 0; line-height: 1.65; max-width: 52ch; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 18px 0 40px; }
+  .stat { border-radius: 18px; padding: 20px 22px; }
+  .stat b { display: block; font-family: 'Fraunces', serif; font-size: 32px; font-weight: 600; }
+  .stat span { font-size: 13px; color: #5c5866; }
+  .section-title { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 400; margin: 0 0 16px; }
+  .posts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .post { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 22px; }
+  .post .meta { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .post p { margin: 0; line-height: 1.6; }
+  .tag { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 99px; margin-top: 14px; }
+
+  /* ---------- math modal ---------- */
+  .modal {
+    position: fixed; inset: 0; z-index: 1000; padding: 20px;
+    display: grid; place-items: center;
+    background: rgba(43,42,51,.45); backdrop-filter: blur(6px);
+  }
+  .modal-card {
+    width: min(480px, 100%); background: var(--cream); border-radius: 22px; padding: 34px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.25);
+    animation: jitter .09s infinite;
+  }
+  @keyframes jitter {
+    0% { transform: translate(0,0); } 25% { transform: translate(1px,-1px); }
+    50% { transform: translate(-1px,1px); } 75% { transform: translate(1px,1px); }
+  }
+  .modal-card .eyebrow { color: var(--muted); }
+  .modal-card h3 { font-family: 'Fraunces', serif; font-weight: 600; font-size: 26px; margin: 0 0 18px; }
+  .problem {
+    font-family: 'Fraunces', serif; font-size: 24px; text-align: center;
+    background: var(--sky); padding: 18px; border-radius: 14px; margin: 0 0 18px;
+  }
+  .modal-card input {
+    flex: 1; min-width: 0; font: inherit; font-size: 18px; padding: 12px 14px;
+    border: 1px solid var(--line); border-radius: 10px; background: #fff; outline: none;
+  }
+  .modal-card input:focus { border-color: #b9a7d8; box-shadow: 0 0 0 3px rgba(217,201,239,.6); }
+  .modal-card .go {
+    font: inherit; font-weight: 700; border: 0; border-radius: 10px; padding: 0 20px;
+    background: var(--ink); color: #fff;
+  }
+  .modal-card .go.is-hover { background: #45434f; }
+  .modal-card .msg.err { color: #c2456b; }
+
+  @media (max-width: 640px) {
+    .hero { grid-template-columns: 1fr; text-align: center; justify-items: center; }
+    .stats, .posts { grid-template-columns: 1fr; }
+    .navlinks { display: none; }
+  }
+</style>
+</head>
+<body class="neon">
+
+<div id="cursor">
+  <svg width="22" height="26" viewBox="0 0 22 26"><path d="M2 2 L2 21 L7 16.5 L10.5 24 L13.5 22.6 L10 15.4 L17 15.4 Z"/></svg>
+</div>
+
+<!-- ============ LOGIN ============ -->
+<section id="login">
+  <div class="login-card" id="loginCard">
+    <p class="eyebrow">// secure login</p>
+    <h1>Who goes there?</h1>
+    <p class="prompt" id="prompt">Enter your name. Minimum 5 letters.</p>
+    <div class="field">
+      <input id="nameInput" autocomplete="off" spellcheck="false" placeholder="your name">
+      <button class="go" id="enterBtn">Enter ↵</button>
+    </div>
+    <p class="msg" id="msg"></p>
+    <div class="vkb hidden" id="vkb"></div>
+  </div>
+</section>
+
+<!-- ============ APP (after login) ============ -->
+<main id="app" class="hidden">
+  <section id="loading">
+    <p class="count" id="count">1,00,000</p>
+    <p class="load-label">Loading your profile. Please wait patiently.</p>
+    <div class="bar"><span id="barFill"></span></div>
+    <div class="insult" id="insult">
+      <p>How long are you gonna wait, <strong>IDIOT</strong>.</p>
+      <p>JUST SCROLL DOWN.</p>
+      <div class="arrow">↓</div>
+    </div>
+  </section>
+
+  <section id="profile">
+    <div class="top">
+      <div class="brand">habibi<span>.profile</span></div>
+      <div class="navlinks"><a href="#">Profile</a><a href="#">Posts</a><a href="#">Settings</a></div>
+    </div>
+
+    <div class="hero">
+      <div class="avatar">h</div>
+      <div>
+        <h2>Habibi</h2>
+        <p class="handle">@habibi</p>
+        <p class="formerly">formerly <s id="exName">someone</s></p>
+        <p class="bio">Logged in with an upside-down mouse and a scrambled keyboard. Survived the screech. Still waiting for that loading screen to finish.</p>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat" style="background:var(--mint)"><b>0</b><span>Followers</span></div>
+      <div class="stat" style="background:var(--peach)"><b>1</b><span>Following (your ex)</span></div>
+      <div class="stat" style="background:var(--lav)"><b>0%</b><span>Patience left</span></div>
+    </div>
+
+    <h3 class="section-title">Recent posts</h3>
+    <div class="posts">
+      <div class="post">
+        <div class="meta">2 minutes ago</div>
+        <p>Changed my name to Habibi. Apparently the old one belonged to someone's ex.</p>
+        <span class="tag" style="background:var(--rose)">identity crisis</span>
+      </div>
+      <div class="post">
+        <div class="meta">5 minutes ago</div>
+        <p>The loading screen said 1,00,000. I believed it. I should not have believed it.</p>
+        <span class="tag" style="background:var(--sky)">trust issues</span>
+      </div>
+      <div class="post">
+        <div class="meta">yesterday</div>
+        <p>HCF × LCM = product of the two numbers. The screech taught me that.</p>
+        <span class="tag" style="background:var(--mint)">education</span>
+      </div>
+      <div class="post">
+        <div class="meta">last week</div>
+        <p>Moved my mouse left. It went right. Moved it right. It went left. I live here now.</p>
+        <span class="tag" style="background:var(--lav)">acceptance</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ MATH MODAL ============ -->
+<div class="modal hidden" id="mathModal">
+  <div class="modal-card" id="mathCard">
+    <p class="eyebrow">make it stop</p>
+    <h3>Solve this and the noise stops.</h3>
+    <p class="problem" id="problem"></p>
+    <div class="field">
+      <input id="mathInput" inputmode="numeric" autocomplete="off" placeholder="your answer">
+      <button class="go" id="mathBtn">Submit</button>
+    </div>
+    <p class="msg" id="mathMsg"></p>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   1. INVERTED CURSOR
+   Real cursor is hidden. A fake one is drawn mirrored on the
+   X axis, and every click is re-routed to the fake position.
+   ========================================================= */
+const INVERT_Y = false; // set true for extra suffering
+const cursorEl = document.getElementById('cursor');
+let fx = -100, fy = -100, hovered = null;
+
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+document.addEventListener('mousemove', e => {
+  fx = clamp(window.innerWidth - e.clientX, 0, window.innerWidth - 1);
+  fy = clamp(INVERT_Y ? window.innerHeight - e.clientY : e.clientY, 0, window.innerHeight - 1);
+  cursorEl.style.transform = `translate(${fx}px, ${fy}px)`;
+  updateHover();
+});
+document.addEventListener('mouseleave', () => { cursorEl.style.transform = 'translate(-100px,-100px)'; });
+window.addEventListener('scroll', updateHover);
+
+function updateHover() {
+  const el = document.elementFromPoint(fx, fy);
+  const t = el ? el.closest('button, .key, input, a') : null;
+  if (t !== hovered) {
+    if (hovered) hovered.classList.remove('is-hover');
+    if (t) t.classList.add('is-hover');
+    hovered = t;
+  }
+}
+
+// Stop real clicks from focusing whatever is under the REAL mouse
+document.addEventListener('mousedown', e => {
+  if (!e.isTrusted) return;
+  e.preventDefault();
+  unlockAudio();
+}, true);
+
+// Re-route every real click to the element under the FAKE cursor
+document.addEventListener('click', e => {
+  if (!e.isTrusted) return;
+  e.preventDefault();
+  e.stopPropagation();
+  unlockAudio();
+  const target = document.elementFromPoint(fx, fy);
+  if (!target) return;
+  if (target.matches('input, textarea')) target.focus();
+  else target.click();
+}, true);
+
+/* =========================================================
+   2. LOGIN: name twice, second time via scrambled keyboard
+   ========================================================= */
+const nameInput = document.getElementById('nameInput');
+const enterBtn  = document.getElementById('enterBtn');
+const promptEl  = document.getElementById('prompt');
+const msgEl     = document.getElementById('msg');
+const vkb       = document.getElementById('vkb');
+const loginCard = document.getElementById('loginCard');
+let stage = 1;
+let exName = '';
+
+nameInput.focus();
+
+function say(text, isErr) {
+  msgEl.textContent = text;
+  msgEl.classList.toggle('err', !!isErr);
+}
+function shake(el) {
+  el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
+}
+
+function submitName() {
+  const v = nameInput.value.trim();
+  if (stage === 1) {
+    if (v.replace(/[^a-z]/gi, '').length < 5) {
+      say('Five letters minimum. We have standards.', true);
+      shake(loginCard);
+      return;
+    }
+    exName = v;
+    say(`Ew. Not “${v}” please. That's my ex's name. Enter another name.`, true);
+    startStageTwo();
+  } else {
+    if (v.toLowerCase() === 'habibi') {
+      login();
+    } else {
+      say(`“${v || '(nothing)'}” is not habibi. Try again.`, true);
+      shake(loginCard);
+    }
+  }
+}
+
+nameInput.addEventListener('keydown', e => {
+  if (stage === 2) { e.preventDefault(); say('Nope. Your keyboard is banned. Use the one below.', true); return; }
+  if (e.key === 'Enter') submitName();
+});
+enterBtn.addEventListener('click', submitName);
+
+function startStageTwo() {
+  stage = 2;
+  nameInput.value = '';
+  nameInput.readOnly = true;
+  nameInput.placeholder = 'use the keyboard below';
+  promptEl.innerHTML = 'Your new name is <b>habibi</b>. Type it using the keyboard below. Only the keyboard below.';
+  buildKeyboard();
+  vkb.classList.remove('hidden');
+}
+
+function buildKeyboard() {
+  const letters = 'abcdefghijklmnopqrstuvwxyz'.split('');
+  const keys = [...letters, '⌫', '↵'];
+  // Fisher-Yates shuffle, including where backspace and enter land
+  for (let i = keys.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [keys[i], keys[j]] = [keys[j], keys[i]];
+  }
+  vkb.innerHTML = '';
+  keys.forEach(k => {
+    const b = document.createElement('button');
+    b.className = 'key';
+    b.textContent = k;
+    b.addEventListener('click', () => {
+      b.classList.add('pressed'); setTimeout(() => b.classList.remove('pressed'), 100);
+      if (k === '⌫') nameInput.value = nameInput.value.slice(0, -1);
+      else if (k === '↵') submitName();
+      else nameInput.value += k;
+    });
+    vkb.appendChild(b);
+  });
+}
+
+/* =========================================================
+   3. LOADING SCREEN: counts down from 1,00,000
+   ========================================================= */
+const app = document.getElementById('app');
+const countEl = document.getElementById('count');
+const barFill = document.getElementById('barFill');
+const insult  = document.getElementById('insult');
+let scrollUnlocked = false;
+
+function login() {
+  unlockAudio();
+  document.getElementById('login').classList.add('hidden');
+  document.body.classList.remove('neon');
+  app.classList.remove('hidden');
+  document.getElementById('exName').textContent = exName;
+  document.documentElement.style.overflow = 'hidden'; // no scrolling yet
+  window.scrollTo(0, 0);
+
+  const start = 100000;
+  let n = start;
+  const t0 = Date.now();
+  const timer = setInterval(() => {
+    n -= Math.ceil(Math.random() * 3);
+    countEl.textContent = n.toLocaleString('en-IN');
+    barFill.style.width = (0.3 + ((start - n) / start) * 100) + '%';
+  }, 60);
+
+  setTimeout(() => {
+    insult.classList.add('show');
+    document.documentElement.style.overflow = '';
+    scrollUnlocked = true;
+  }, 10000);
+}
+
+/* =========================================================
+   4. SCREECH + HCF × LCM problem
+   Sound is generated by the browser (Web Audio), no file needed.
+   ========================================================= */
+let ctx = null, master = null, voices = [], screeching = false, triggered = false;
+
+function unlockAudio() {
+  try {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+  } catch (_) {}
+}
+
+function startScreech() {
+  if (!ctx) unlockAudio();
+  if (!ctx) return;
+  master = ctx.createGain();
+  master.gain.setValueAtTime(0, ctx.currentTime);
+  master.gain.linearRampToValueAtTime(0.35, ctx.currentTime + 0.25);
+  master.connect(ctx.destination);
+
+  // wobble makes it sound like nails on a chalkboard instead of a beep
+  const lfo = ctx.createOscillator();
+  lfo.frequency.value = 9;
+  const lfoGain = ctx.createGain();
+  lfoGain.gain.value = 550;
+  lfo.connect(lfoGain);
+  lfo.start();
+  voices.push(lfo);
+
+  [[2500, 'sawtooth'], [3150, 'square'], [1750, 'sawtooth']].forEach(([f, type]) => {
+    const o = ctx.createOscillator();
+    o.type = type;
+    o.frequency.value = f;
+    lfoGain.connect(o.frequency);
+    const g = ctx.createGain();
+    g.gain.value = 0.22;
+    o.connect(g).connect(master);
+    o.start();
+    voices.push(o);
+  });
+  screeching = true;
+}
+
+function louder() {
+  if (!master) return;
+  const next = Math.min(0.7, master.gain.value + 0.12);
+  master.gain.setTargetAtTime(next, ctx.currentTime, 0.05);
+  voices.slice(1).forEach(o => o.frequency.setTargetAtTime(o.frequency.value + 250, ctx.currentTime, 0.1));
+}
+
+function stopScreech() {
+  if (!master) return;
+  master.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+  setTimeout(() => { voices.forEach(o => { try { o.stop(); } catch (_) {} }); voices = []; }, 300);
+  screeching = false;
+}
+
+const mathModal = document.getElementById('mathModal');
+const mathCard  = document.getElementById('mathCard');
+const mathInput = document.getElementById('mathInput');
+const mathBtn   = document.getElementById('mathBtn');
+const mathMsg   = document.getElementById('mathMsg');
+const problemEl = document.getElementById('problem');
+let answer = 0;
+
+function newProblem() {
+  const pairs = [[12, 18], [15, 20], [8, 14], [21, 6], [9, 24], [16, 28], [14, 35]];
+  const [a, b] = pairs[Math.floor(Math.random() * pairs.length)];
+  answer = a * b; // HCF(a,b) × LCM(a,b) is always a × b
+  problemEl.textContent = `HCF(${a}, ${b}) × LCM(${a}, ${b}) = ?`;
+}
+
+window.addEventListener('scroll', () => {
+  if (!scrollUnlocked || triggered) return;
+  if (window.scrollY > window.innerHeight * 0.35) {
+    triggered = true;
+    newProblem();
+    mathModal.classList.remove('hidden');
+    document.documentElement.style.overflow = 'hidden';
+    startScreech();
+    mathInput.focus();
+  }
+});
+
+function checkMath() {
+  const v = parseInt(mathInput.value.replace(/[^0-9]/g, ''), 10);
+  if (v === answer) {
+    stopScreech();
+    mathModal.classList.add('hidden');
+    document.documentElement.style.overflow = '';
+    document.getElementById('profile').scrollIntoView({ behavior: 'smooth' });
+  } else {
+    mathMsg.textContent = 'Wrong. Louder now.';
+    mathMsg.classList.add('err');
+    shake(mathCard);
+    mathInput.value = '';
+    louder();
+  }
+}
+mathBtn.addEventListener('click', checkMath);
+mathInput.addEventListener('keydown', e => { if (e.key === 'Enter') checkMath(); });
+</script>
+</body>
+</html>
